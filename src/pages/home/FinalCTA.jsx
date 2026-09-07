@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
 
+// ---------------------------------------------------------------------------
+// Sends via Resend, through a small Express server deployed on Render.
+// See server/server.js for the backend itself and its setup notes.
+// ---------------------------------------------------------------------------
+// Replace this with your actual Render service URL once deployed, e.g.
+// 'https://bharyat-talent-mail.onrender.com/send-mail'
+const RENDER_ENDPOINT = 'https://bharyat-mail-server.onrender.com/send-mail';
+
 const HIRING_FOR_OPTIONS = [
   'RF / mmWave',
   'FPGA / ASIC',
@@ -57,6 +65,7 @@ export default function FinalCTA() {
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState('idle'); // idle | sending | error
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -74,6 +83,7 @@ export default function FinalCTA() {
 
   function openForm() {
     setSubmitted(false);
+    setStatus('idle');
     setForm(INITIAL_FORM);
     setIsOpen(true);
   }
@@ -86,11 +96,29 @@ export default function FinalCTA() {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name || !form.company || !form.email) return;
-    window.location.href = buildMailto(form);
-    setSubmitted(true);
+
+    setStatus('sending');
+    try {
+      const res = await fetch(RENDER_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json().catch(() => ({ success: false }));
+
+      if (res.ok && data.success) {
+        setStatus('idle');
+        setSubmitted(true);
+      } else {
+        setStatus('error');
+      }
+    } catch (err) {
+      console.error('Send failed:', err);
+      setStatus('error');
+    }
   }
 
   return (
@@ -175,13 +203,29 @@ export default function FinalCTA() {
                   </svg>
                 </span>
                 <p>
-                  Thanks, {form.name.split(' ')[0] || 'there'}. Your email client should have
-                  opened with your details pre-filled &mdash; send it across and our team will
-                  get back to you.
+                  Thanks, {form.name.split(' ')[0] || 'there'}. Your enquiry has been sent to
+                  our team &mdash; we&rsquo;ll get back to you shortly.
                 </p>
                 <button type="button" className="final-cta__button final-cta__button--modal" onClick={closeForm}>
                   Done
                 </button>
+              </div>
+            ) : status === 'error' ? (
+              <div className="final-cta__success">
+                <p>
+                  Something went wrong sending that &mdash; sorry about that. You can try again,
+                  or email us directly and we&rsquo;ll pick it up from there.
+                </p>
+                <button
+                  type="button"
+                  className="final-cta__button final-cta__button--modal"
+                  onClick={() => setStatus('idle')}
+                >
+                  Try again
+                </button>
+                <a href={buildMailto(form)} className="final-cta__fallback-link">
+                  Email us directly instead
+                </a>
               </div>
             ) : (
               <form className="final-cta__form" onSubmit={handleSubmit}>
@@ -265,8 +309,12 @@ export default function FinalCTA() {
                   />
                 </label>
 
-                <button type="submit" className="final-cta__button final-cta__button--modal">
-                  Send to our team
+                <button
+                  type="submit"
+                  className="final-cta__button final-cta__button--modal"
+                  disabled={status === 'sending'}
+                >
+                  {status === 'sending' ? 'Sending…' : 'Send to our team'}
                 </button>
               </form>
             )}
@@ -360,22 +408,27 @@ export default function FinalCTA() {
         }
 
         .final-cta__button {
-          position: relative;
           display: inline-flex;
           align-items: center;
           gap: 10px;
-          appearance: none;
           border: none;
-          cursor: pointer;
-          background: linear-gradient(135deg, var(--color-gold), var(--color-gold-light));
+          border-radius: 999px;
           color: var(--color-navy-deep);
           font-family: var(--font-body);
-          font-size: 15px;
+          font-size: 14.5px;
           font-weight: 700;
-          padding: 14px 26px;
-          border-radius: 6px;
+          letter-spacing: 0.01em;
+          padding: 14px 28px;
+          background: linear-gradient(135deg, var(--color-gold-light), var(--color-gold));
+          box-shadow: 0 10px 26px -8px rgba(201, 151, 44, 0.55);
           white-space: nowrap;
+          cursor: pointer;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .final-cta__button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 32px -8px rgba(201, 151, 44, 0.65);
         }
 
         .final-cta__button-dot {
@@ -383,29 +436,22 @@ export default function FinalCTA() {
           height: 7px;
           border-radius: 50%;
           background: var(--color-navy-deep);
-          animation: finalCtaPulse 2.2s ease-in-out infinite;
-        }
-
-        .final-cta__button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 26px -10px rgba(201, 151, 44, 0.55);
+          animation: finalCtaPulse 1.8s ease-in-out infinite;
         }
 
         .final-cta__contact {
           margin: 0;
           display: flex;
           flex-direction: column;
-          gap: 5px;
           align-items: flex-end;
+          gap: 6px;
         }
 
         .final-cta__contact-row {
           display: flex;
-          align-items: baseline;
           gap: 8px;
           font-family: var(--font-body);
           font-size: 13px;
-          color: rgba(248, 245, 239, 0.55);
           white-space: nowrap;
         }
 
@@ -572,6 +618,21 @@ export default function FinalCTA() {
           width: 100%;
           margin-top: 4px;
           justify-content: center;
+        }
+
+        .final-cta__button:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+
+        .final-cta__fallback-link {
+          font-family: var(--font-body);
+          font-size: 13.5px;
+          font-weight: 600;
+          color: var(--color-steel);
+          text-decoration: underline;
         }
 
         .final-cta__button--modal .final-cta__button-dot {
