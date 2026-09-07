@@ -21,7 +21,7 @@ const ENGAGEMENT_OPTIONS = [
   'Not sure yet',
 ];
 
-const CONTACT_EMAIL = 'kavya.m@bharyat.com';
+const CONTACT_EMAIL = 'talent@bharyat.com';
 const CONTACT_PHONE = '807 317 0466';
 const CONTACT_SITE = 'Bharyat.com/talent';
 

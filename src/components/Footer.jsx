@@ -98,10 +98,10 @@ export default function SiteFooter() {
                   <path d="M4 7.5l8 6 8-6" />
                 </svg>
                 <a
-                  href="mailto:kavya.m@bharyat.com"
-                  onClick={(e) => copyToClipboard(e, 'kavya.m@bharyat.com', 'email')}
+                  href="mailto:talent@bharyat.com"
+                  onClick={(e) => copyToClipboard(e, 'talent@bharyat.com', 'email')}
                 >
-                  kavya.m@bharyat.com
+                  talent@bharyat.com
                 </a>
                 <span className={`site-footer__copied ${copiedKey === 'email' ? 'is-visible' : ''}`}>
                   Copied
@@ -126,7 +126,7 @@ export default function SiteFooter() {
                   <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z" />
                   <circle cx="12" cy="10" r="2.4" />
                 </svg>
-                <span>New Delhi, India &middot; HQ</span>
+                <span>3rd &amp; 4th Floor, 80 Feet Main Rd, NGEF Layout, Nagarbhavi, Bengaluru, Karnataka 560072 &middot; HQ</span>
               </li>
             </ul>
             <p className="site-footer__offices">
@@ -137,8 +137,8 @@ export default function SiteFooter() {
 
         <div className="site-footer__bottom">
           <p>
-            &copy; {year} Bharyat Talent Partners &mdash; A Bharyat Advanced Systems Company &mdash; New
-            Delhi, India
+            &copy; {year} Bharyat Talent Partners &mdash; A Bharyat Advanced Systems Company &mdash; Bengaluru,
+            India
           </p>
 
           <button type="button" className="site-footer__top-btn" onClick={scrollToTop} aria-label="Back to top">
