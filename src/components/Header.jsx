@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 
 // Points at sections that already exist on the single home page.
 // Swap these back to routes once the standalone pages are built.
 // "Home" is covered by the logo, "Contact" by the Start a Search button —
 // no need to duplicate either here.
+// Careers is a real route (`to`), not an in-page anchor (`href`) — it's its
+// own page, so it navigates instead of scrolling. "AI Advantage" was
+// dropped to make room for it (still covered inside How We Work).
 const NAV_LINKS = [
+  { to: '/careers', label: 'Careers' },
   { href: '#how-we-work', label: 'How We Work' },
-  { href: '#ai-advantage', label: 'AI Advantage' },
   { href: '#expertise', label: 'Expertise' },
   { href: '#engagement', label: 'Engagement Models' },
   { href: '#why-bharyat', label: 'Why Bharyat' },
@@ -17,12 +21,15 @@ const NAV_LINKS = [
 // Header hides once you've scrolled past 100px and are moving down;
 // reveals again the moment you scroll up.
 
-function scrollToSection(e, href) {
+// Scrolls to the section if it exists on the current page.
+// Returns true/false so callers know whether it actually happened.
+function scrollToSection(href) {
   const el = document.querySelector(href);
   if (el) {
-    e.preventDefault();
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
   }
+  return false;
 }
 
 export default function Header() {
@@ -32,11 +39,60 @@ export default function Header() {
   const lastScrollY = useRef(0);
   const tickingRef = useRef(false);
   const closeMenu = () => setIsOpen(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isHome = location.pathname === '/';
+
+  // Single entry point for every in-page-anchor click (logo, nav links, CTA).
+  // On the home page it just scrolls. On any other page, the section doesn't
+  // exist yet — so navigate to home carrying the hash, and let the effect
+  // below finish the scroll once the home page has mounted.
+  const goToSection = (e, href) => {
+    e.preventDefault();
+    if (isHome) {
+      scrollToSection(href);
+    } else {
+      // String form (not a { pathname, hash } object) — matches the exact
+      // "/talent/#hero" shape the rest of the app produces, instead of
+      // collapsing to "/talent#hero" which doesn't match the home route.
+      navigate(`/${href}`);
+    }
+  };
+
+  // Logo is just "go home" — the hero section is already what you see at
+  // the top of the home page, so there's no need to carry a #hero hash
+  // (which was causing the "/talent#hero" vs "/talent/" URL mismatch).
+  const goHome = (e) => {
+    e.preventDefault();
+    if (isHome) {
+      scrollToSection('#hero');
+    } else {
+      navigate('/');
+    }
+  };
 
   const handleNavClick = (e, href) => {
-    scrollToSection(e, href);
+    goToSection(e, href);
     closeMenu();
   };
+
+  // After navigating to "/" with a hash (from another page), the section
+  // wasn't in the DOM at click time. Once we've landed on home and it has
+  // rendered, scroll to it. Retries briefly in case sections mount async.
+  useEffect(() => {
+    if (!isHome || !location.hash) return;
+    let attempts = 0;
+    let raf;
+    const tryScroll = () => {
+      attempts += 1;
+      const scrolled = scrollToSection(location.hash);
+      if (!scrolled && attempts < 20) {
+        raf = requestAnimationFrame(tryScroll);
+      }
+    };
+    raf = requestAnimationFrame(tryScroll);
+    return () => cancelAnimationFrame(raf);
+  }, [isHome, location.hash]);
 
   useEffect(() => {
     // Plain window scroll — this page scrolls via the document/window itself
@@ -93,28 +149,34 @@ export default function Header() {
       <div className="header__container">
         {/* Div 1 — Logo */}
         <div className="header__logo">
-          <a href="#hero" onClick={(e) => handleNavClick(e, '#hero')}>
+          <a href="#hero" onClick={goHome}>
             <img src={logo} alt="Bharyat Talent Partners" />
           </a>
         </div>
 
-        {/* Div 2 — Nav links (scroll to in-page sections) */}
+        {/* Div 2 — Nav links (Careers routes to its own page; rest scroll to in-page sections) */}
         <nav className="header__nav">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="header__link"
-              onClick={(e) => scrollToSection(e, link.href)}
-            >
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) =>
+            link.to ? (
+              <Link key={link.to} to={link.to} className="header__link">
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className="header__link"
+                onClick={(e) => goToSection(e, link.href)}
+              >
+                {link.label}
+              </a>
+            )
+          )}
         </nav>
 
         {/* Div 3 — CTA + mobile toggle */}
         <div className="header__actions">
-          <a href="#contact" className="header__btn" onClick={(e) => scrollToSection(e, '#contact')}>
+          <a href="#contact" className="header__btn" onClick={(e) => goToSection(e, '#contact')}>
             Start a Search
           </a>
 
@@ -137,16 +199,22 @@ export default function Header() {
         aria-hidden={!isOpen}
       >
         <div className="header__mobile-list">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="header__link"
-              onClick={(e) => handleNavClick(e, link.href)}
-            >
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) =>
+            link.to ? (
+              <Link key={link.to} to={link.to} className="header__link" onClick={closeMenu}>
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className="header__link"
+                onClick={(e) => handleNavClick(e, link.href)}
+              >
+                {link.label}
+              </a>
+            )
+          )}
           <a
             href="#contact"
             onClick={(e) => handleNavClick(e, '#contact')}
