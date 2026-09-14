@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { adminForgotPassword, adminLogin } from '../../lib/api';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // login | forgot | sent
   const [view, setView] = useState('login');
@@ -14,6 +15,9 @@ export default function AdminLogin() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Arrived here right after successfully resetting a password.
+  const justReset = Boolean(location.state?.resetSuccess);
 
   const goToForgot = () => {
     setError('');
@@ -60,6 +64,10 @@ export default function AdminLogin() {
         <form className="admin-login__card" onSubmit={handleSubmit}>
           <p className="admin-login__eyebrow">Admin</p>
           <h1 className="admin-login__heading">Career portal login</h1>
+
+          {justReset && (
+            <p className="admin-login__success">Your password has been reset — log in with your new password.</p>
+          )}
 
           <div className="admin-login__field">
             <label htmlFor="admin-email">Email</label>
@@ -255,6 +263,17 @@ export default function AdminLogin() {
           font-family: var(--font-body);
           font-size: 13.5px;
           color: #9c3b2f;
+        }
+
+        .admin-login__success {
+          margin: 0;
+          font-family: var(--font-body);
+          font-size: 13px;
+          font-weight: 600;
+          color: #1e7a4c;
+          background: rgba(30, 122, 76, 0.1);
+          border-radius: 8px;
+          padding: 9px 12px;
         }
 
         .admin-login__submit {

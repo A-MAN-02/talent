@@ -6,6 +6,7 @@ import Home from './pages/home/home';
 import Career from './pages/career/Career';
 import Apply from './pages/career/Apply';
 import AdminLogin from './pages/admin/AdminLogin';
+import AdminResetPassword from './pages/admin/AdminResetPassword';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
 function Placeholder({ name }) {
@@ -42,6 +43,9 @@ export default function App() {
 
           {/* ---------- Admin (not linked from public nav) ---------- */}
           <Route path="/admin/login" element={<AdminLogin />} />
+          {/* Link from the "forgot password" email points here, e.g.
+              /admin/reset-password/:token */}
+          <Route path="/admin/reset-password/:token" element={<AdminResetPassword />} />
           <Route
             path="/admin"
             element={
