@@ -10,9 +10,18 @@ export default function AdminResetPassword() {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+
+  const handlePasswordKeyEvent = (e) => {
+    if (typeof e.getModifierState === 'function') {
+      setCapsLockOn(e.getModifierState('CapsLock'));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,29 +62,80 @@ export default function AdminResetPassword() {
 
           <div className="admin-login__field">
             <label htmlFor="new-password">New password</label>
-            <input
-              id="new-password"
-              type="password"
-              required
-              autoFocus
-              minLength={MIN_PASSWORD_LENGTH}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="admin-login__password-wrap">
+              <input
+                id="new-password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                autoFocus
+                autoComplete="new-password"
+                minLength={MIN_PASSWORD_LENGTH}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyUp={handlePasswordKeyEvent}
+                onKeyDown={handlePasswordKeyEvent}
+              />
+              <button
+                type="button"
+                className="admin-login__eye"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3l18 18" />
+                    <path d="M10.58 10.58a2 2 0 002.83 2.83" />
+                    <path d="M9.88 4.24A9.94 9.94 0 0112 4c5.5 0 9 5 9.6 8-.24 1.16-.77 2.32-1.55 3.4M6.53 6.53C4.6 7.86 3.1 9.7 2.4 12c1 3.5 4.5 8 9.6 8 1.35 0 2.6-.31 3.72-.85" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2.4 12C3 8.5 6.5 4 12 4s9 4.5 9.6 8c-.6 3.5-4.1 8-9.6 8s-9-4.5-9.6-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="admin-login__field">
             <label htmlFor="confirm-password">Confirm password</label>
-            <input
-              id="confirm-password"
-              type="password"
-              required
-              minLength={MIN_PASSWORD_LENGTH}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
+            <div className="admin-login__password-wrap">
+              <input
+                id="confirm-password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                required
+                autoComplete="new-password"
+                minLength={MIN_PASSWORD_LENGTH}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyUp={handlePasswordKeyEvent}
+                onKeyDown={handlePasswordKeyEvent}
+              />
+              <button
+                type="button"
+                className="admin-login__eye"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showConfirmPassword}
+              >
+                {showConfirmPassword ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3l18 18" />
+                    <path d="M10.58 10.58a2 2 0 002.83 2.83" />
+                    <path d="M9.88 4.24A9.94 9.94 0 0112 4c5.5 0 9 5 9.6 8-.24 1.16-.77 2.32-1.55 3.4M6.53 6.53C4.6 7.86 3.1 9.7 2.4 12c1 3.5 4.5 8 9.6 8 1.35 0 2.6-.31 3.72-.85" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2.4 12C3 8.5 6.5 4 12 4s9 4.5 9.6 8c-.6 3.5-4.1 8-9.6 8s-9-4.5-9.6-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
+          {capsLockOn && <p className="admin-login__warning">Caps Lock is on</p>}
           {error && <p className="admin-login__error">{error}</p>}
 
           <button type="submit" className="admin-login__submit" disabled={loading}>
@@ -169,6 +229,50 @@ export default function AdminResetPassword() {
         .admin-login__field input:focus {
           border-color: var(--color-gold);
           box-shadow: 0 0 0 3px rgba(201, 151, 44, 0.15);
+        }
+
+        .admin-login__password-wrap {
+          position: relative;
+          display: flex;
+        }
+
+        .admin-login__password-wrap input {
+          flex: 1;
+          padding-right: 42px;
+        }
+
+        .admin-login__eye {
+          position: absolute;
+          top: 50%;
+          right: 10px;
+          transform: translateY(-50%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          padding: 0;
+          border: none;
+          background: none;
+          color: var(--color-text-muted);
+          cursor: pointer;
+        }
+
+        .admin-login__eye svg {
+          width: 19px;
+          height: 19px;
+        }
+
+        .admin-login__eye:hover {
+          color: var(--color-steel);
+        }
+
+        .admin-login__warning {
+          margin: 0;
+          font-family: var(--font-body);
+          font-size: 12.5px;
+          font-weight: 600;
+          color: #9c6f1f;
         }
 
         .admin-login__error {
