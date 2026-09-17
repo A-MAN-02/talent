@@ -88,6 +88,7 @@ export default function AdminLogin() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="mail@gmail.com"
             />
           </div>
 
@@ -108,6 +109,7 @@ export default function AdminLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyUp={handlePasswordKeyEvent}
                 onKeyDown={handlePasswordKeyEvent}
+                placeholder="••••••••"
               />
               <button
                 type="button"

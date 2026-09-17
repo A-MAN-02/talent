@@ -9,6 +9,7 @@ import EngagementPreview from './EngagementPreview';
 import WhyBharyatTeaser from './WhyBharyatTeaser';
 import IndustriesStrip from './IndustriesStrip';
 import GroupStats from './GroupStats';
+import InsightsPreview from './InsightsPreview';
 import FinalCTA from './FinalCTA';
 
 export default function Home() {
@@ -25,6 +26,7 @@ export default function Home() {
       <WhyBharyatTeaser />
       <IndustriesStrip />
       <GroupStats />
+      <InsightsPreview />
       <FinalCTA />
     </>
   );

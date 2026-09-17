@@ -4,6 +4,7 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/home/home';
 import Career from './pages/career/Career';
+import Insights from './pages/Insights/Insights';
 import Apply from './pages/career/Apply';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminResetPassword from './pages/admin/AdminResetPassword';
@@ -36,6 +37,12 @@ export default function App() {
           <Route path="/team" element={<Placeholder name="Team" />} />
           <Route path="/trust" element={<Placeholder name="Trust" />} />
           <Route path="/contact" element={<Placeholder name="Contact" />} />
+
+          {/* ---------- Insights ---------- */}
+          <Route path="/insights" element={<Insights />} />
+          {/* Article detail page isn't built yet — placeholder so the card
+              links from the homepage strip and the full list don't dead-end. */}
+          <Route path="/insights/:id" element={<Placeholder name="Article" />} />
 
           {/* ---------- Careers ---------- */}
           <Route path="/careers" element={<Career />} />

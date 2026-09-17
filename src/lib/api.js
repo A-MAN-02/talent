@@ -47,6 +47,18 @@ export function submitApplication(formData) {
   return request('/api/applications', { method: 'POST', body: formData });
 }
 
+// ---------- Public: insights ----------
+
+// Shape matches the ARTICLES dummy data in Insights.jsx / InsightsPreview.jsx:
+// an array of { id, tag, title, excerpt, readTime }.
+export function getArticles() {
+  return request('/api/insights');
+}
+
+export function getArticle(id) {
+  return request(`/api/insights/${id}`);
+}
+
 // ---------- Admin auth ----------
 
 export async function adminLogin(email, password) {
@@ -107,6 +119,71 @@ export function updateJob(token, id, payload) {
 
 export function deleteJob(token, id) {
   return request(`/api/jobs/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(token, false),
+  });
+}
+
+// ---------- Admin: insights ----------
+
+export function getAllInsightsAdmin(token) {
+  return request('/api/insights/admin/all', { headers: authHeaders(token, false) });
+}
+
+export function createInsight(token, payload) {
+  return request('/api/insights', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateInsight(token, id, payload) {
+  return request(`/api/insights/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteInsight(token, id) {
+  return request(`/api/insights/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(token, false),
+  });
+}
+
+// ---------- Public: market pulse ----------
+
+// Shape: an array of { id, field, trend: 'up' | 'down' | 'flat', note }.
+export function getMarketPulse() {
+  return request('/api/market-pulse');
+}
+
+// ---------- Admin: market pulse ----------
+
+export function getAllPulseAdmin(token) {
+  return request('/api/market-pulse/admin/all', { headers: authHeaders(token, false) });
+}
+
+export function createPulseItem(token, payload) {
+  return request('/api/market-pulse', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updatePulseItem(token, id, payload) {
+  return request(`/api/market-pulse/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deletePulseItem(token, id) {
+  return request(`/api/market-pulse/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token, false),
   });

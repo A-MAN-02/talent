@@ -6,16 +6,20 @@ import logo from '../assets/logo.png';
 // Swap these back to routes once the standalone pages are built.
 // "Home" is covered by the logo, "Contact" by the Start a Search button —
 // no need to duplicate either here.
-// Careers is a real route (`to`), not an in-page anchor (`href`) — it's its
-// own page, so it navigates instead of scrolling. "AI Advantage" was
-// dropped to make room for it (still covered inside How We Work).
+// Careers and Insights are real routes (`to`), not in-page anchors
+// (`href`) — they're their own pages, so they navigate instead of
+// scrolling. "AI Advantage" was dropped earlier to make room for Careers
+// (still covered inside How We Work). "Industries" was dropped here to
+// make room for Insights — it's the least load-bearing link of the six
+// (industry expertise is already implied by Expertise / Why Bharyat),
+// while Insights is a full standalone page that had no nav entry at all.
 const NAV_LINKS = [
   { to: '/careers', label: 'Careers' },
   { href: '#how-we-work', label: 'How We Work' },
   { href: '#expertise', label: 'Expertise' },
   { href: '#engagement', label: 'Engagement Models' },
   { href: '#why-bharyat', label: 'Why Bharyat' },
-  { href: '#industries', label: 'Industries' },
+  { to: '/insights', label: 'Insights' },
 ];
 
 // Header hides once you've scrolled past 100px and are moving down;

@@ -2,14 +2,22 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   clearAdminToken,
+  createInsight,
   createJob,
+  createPulseItem,
+  deleteInsight,
   deleteJob,
+  deletePulseItem,
   downloadResume,
   getAdminToken,
+  getAllInsightsAdmin,
   getAllJobsAdmin,
+  getAllPulseAdmin,
   getApplications,
   updateApplicationStatus,
+  updateInsight,
   updateJob,
+  updatePulseItem,
 } from '../../lib/api';
 
 const EMPTY_JOB = {
@@ -21,19 +29,46 @@ const EMPTY_JOB = {
   requirements: [''],
   status: 'active',
 };
+const EMPTY_INSIGHT = { tag: '', title: '', excerpt: '' };
+const EMPTY_PULSE = { field: '', trend: 'up', note: '' };
+const TREND_OPTIONS = ['up', 'down', 'flat'];
 const APP_STATUSES = ['new', 'shortlisted', 'rejected', 'hired'];
+
+// Turns a title into the same kind of id the dummy ARTICLES data in
+// Insights.jsx uses (e.g. "Why AI-scored shortlists\u2026" \u2192
+// "why-ai-scored-shortlists"), so newly created insights route to
+// /insights/:id the same way the existing hardcoded ones do.
+function slugify(str) {
+  return (str || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const token = getAdminToken();
 
-  const [tab, setTab] = useState('jobs'); // jobs | applications
+  const [tab, setTab] = useState('jobs'); // jobs | applications | insights | pulse
 
   const [jobs, setJobs] = useState([]);
   const [jobsState, setJobsState] = useState('loading');
   const [jobForm, setJobForm] = useState(null); // null = hidden, object = editing/creating
   const [savingJob, setSavingJob] = useState(false);
   const [jobError, setJobError] = useState('');
+
+  const [insights, setInsights] = useState([]);
+  const [insightsState, setInsightsState] = useState('loading');
+  const [insightForm, setInsightForm] = useState(null); // null = hidden, object = editing/creating
+  const [savingInsight, setSavingInsight] = useState(false);
+  const [insightError, setInsightError] = useState('');
+
+  const [pulseItems, setPulseItems] = useState([]);
+  const [pulseState, setPulseState] = useState('loading');
+  const [pulseForm, setPulseForm] = useState(null); // null = hidden, object = editing/creating
+  const [savingPulse, setSavingPulse] = useState(false);
+  const [pulseError, setPulseError] = useState('');
 
   const [applications, setApplications] = useState([]);
   const [appsState, setAppsState] = useState('loading');
@@ -50,6 +85,26 @@ export default function AdminDashboard() {
       .catch(() => setJobsState('error'));
   };
 
+  const loadInsights = () => {
+    setInsightsState('loading');
+    getAllInsightsAdmin(token)
+      .then((data) => {
+        setInsights(data);
+        setInsightsState('ready');
+      })
+      .catch(() => setInsightsState('error'));
+  };
+
+  const loadPulse = () => {
+    setPulseState('loading');
+    getAllPulseAdmin(token)
+      .then((data) => {
+        setPulseItems(data);
+        setPulseState('ready');
+      })
+      .catch(() => setPulseState('error'));
+  };
+
   const loadApplications = () => {
     setAppsState('loading');
     getApplications(token)
@@ -62,6 +117,8 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadJobs();
+    loadInsights();
+    loadPulse();
     loadApplications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -176,6 +233,109 @@ export default function AdminDashboard() {
     }
   };
 
+  // ---------- Insights ----------
+
+  const openNewInsightForm = () => {
+    setInsightError('');
+    setInsightForm({ ...EMPTY_INSIGHT });
+  };
+
+  const openEditInsightForm = (insight) => {
+    setInsightError('');
+    setInsightForm({ ...insight });
+  };
+
+  const closeInsightForm = () => setInsightForm(null);
+
+  const handleInsightFieldChange = (field) => (e) =>
+    setInsightForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const handleInsightSubmit = async (e) => {
+    e.preventDefault();
+    setInsightError('');
+    setSavingInsight(true);
+
+    // Editing keeps its existing id so /insights/:id links already shared
+    // don't break; a new insight gets one slugified from its title.
+    const payload = {
+      ...insightForm,
+      id: insightForm.id || slugify(insightForm.title),
+    };
+
+    try {
+      if (insightForm.id) {
+        await updateInsight(token, payload.id, payload);
+      } else {
+        await createInsight(token, payload);
+      }
+      setInsightForm(null);
+      loadInsights();
+    } catch (err) {
+      setInsightError(err.message || 'Could not save this insight');
+    } finally {
+      setSavingInsight(false);
+    }
+  };
+
+  const handleDeleteInsight = async (insight) => {
+    if (!window.confirm(`Delete "${insight.title}"? This can't be undone.`)) return;
+
+    try {
+      await deleteInsight(token, insight.id);
+      loadInsights();
+    } catch (err) {
+      alert(err.message || 'Could not delete this insight');
+    }
+  };
+
+  // ---------- Market pulse ----------
+
+  const openNewPulseForm = () => {
+    setPulseError('');
+    setPulseForm({ ...EMPTY_PULSE });
+  };
+
+  const openEditPulseForm = (item) => {
+    setPulseError('');
+    setPulseForm({ ...item });
+  };
+
+  const closePulseForm = () => setPulseForm(null);
+
+  const handlePulseFieldChange = (field) => (e) =>
+    setPulseForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const handlePulseSubmit = async (e) => {
+    e.preventDefault();
+    setPulseError('');
+    setSavingPulse(true);
+
+    try {
+      if (pulseForm.id) {
+        await updatePulseItem(token, pulseForm.id, pulseForm);
+      } else {
+        await createPulseItem(token, pulseForm);
+      }
+      setPulseForm(null);
+      loadPulse();
+    } catch (err) {
+      setPulseError(err.message || 'Could not save this pulse item');
+    } finally {
+      setSavingPulse(false);
+    }
+  };
+
+  const handleDeletePulse = async (item) => {
+    if (!window.confirm(`Delete "${item.field}"? This can't be undone.`)) return;
+
+    try {
+      await deletePulseItem(token, item.id);
+      loadPulse();
+    } catch (err) {
+      alert(err.message || 'Could not delete this pulse item');
+    }
+  };
+
   // ---------- Applications ----------
 
   const handleStatusChange = async (application, status) => {
@@ -234,6 +394,22 @@ export default function AdminDashboard() {
             Applications
             {applications.length > 0 && <span className="dash__tab-count">{applications.length}</span>}
           </button>
+          <button
+            type="button"
+            className={`dash__tab ${tab === 'insights' ? 'dash__tab--active' : ''}`}
+            onClick={() => setTab('insights')}
+          >
+            Insights
+            {insights.length > 0 && <span className="dash__tab-count">{insights.length}</span>}
+          </button>
+          <button
+            type="button"
+            className={`dash__tab ${tab === 'pulse' ? 'dash__tab--active' : ''}`}
+            onClick={() => setTab('pulse')}
+          >
+            Market Pulse
+            {pulseItems.length > 0 && <span className="dash__tab-count">{pulseItems.length}</span>}
+          </button>
         </div>
 
         {/* ---------- Jobs tab ---------- */}
@@ -277,6 +453,103 @@ export default function AdminDashboard() {
                         Edit
                       </button>
                       <button type="button" className="dash__link-btn dash__link-btn--danger" onClick={() => handleDeleteJob(job)}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ---------- Insights tab ---------- */}
+        {tab === 'insights' && (
+          <div className="dash__panel">
+            <div className="dash__panel-head">
+              <p className="dash__panel-sub">
+                {insightsState === 'ready' ? `${insights.length} insight${insights.length === 1 ? '' : 's'}` : '\u00a0'}
+              </p>
+              <button type="button" className="dash__btn dash__btn--primary" onClick={openNewInsightForm}>
+                Add insight
+              </button>
+            </div>
+
+            {insightsState === 'loading' && <p className="dash__status">Loading&hellip;</p>}
+            {insightsState === 'error' && <p className="dash__status dash__status--error">Couldn&rsquo;t load insights.</p>}
+            {insightsState === 'ready' && insights.length === 0 && (
+              <p className="dash__status">No insights yet &mdash; add your first one above.</p>
+            )}
+
+            {insightsState === 'ready' && insights.length > 0 && (
+              <div className="dash__job-list">
+                {insights.map((insight) => (
+                  <div className="dash__job-row" key={insight.id}>
+                    <div className="dash__job-info">
+                      <div className="dash__job-title-row">
+                        <span className="dash__job-title">{insight.title}</span>
+                      </div>
+                      <span className="dash__job-meta">
+                        {insight.tag || '\u2014'}
+                      </span>
+                    </div>
+                    <div className="dash__job-actions">
+                      <button type="button" className="dash__link-btn" onClick={() => openEditInsightForm(insight)}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="dash__link-btn dash__link-btn--danger"
+                        onClick={() => handleDeleteInsight(insight)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ---------- Market Pulse tab ---------- */}
+        {tab === 'pulse' && (
+          <div className="dash__panel">
+            <div className="dash__panel-head">
+              <p className="dash__panel-sub">
+                {pulseState === 'ready' ? `${pulseItems.length} item${pulseItems.length === 1 ? '' : 's'}` : '\u00a0'}
+              </p>
+              <button type="button" className="dash__btn dash__btn--primary" onClick={openNewPulseForm}>
+                Add pulse item
+              </button>
+            </div>
+
+            {pulseState === 'loading' && <p className="dash__status">Loading&hellip;</p>}
+            {pulseState === 'error' && <p className="dash__status dash__status--error">Couldn&rsquo;t load market pulse items.</p>}
+            {pulseState === 'ready' && pulseItems.length === 0 && (
+              <p className="dash__status">No pulse items yet &mdash; add your first one above.</p>
+            )}
+
+            {pulseState === 'ready' && pulseItems.length > 0 && (
+              <div className="dash__job-list">
+                {pulseItems.map((item) => (
+                  <div className="dash__job-row" key={item.id}>
+                    <div className="dash__job-info">
+                      <div className="dash__job-title-row">
+                        <span className="dash__job-title">{item.field}</span>
+                        <span className={`dash__status-badge dash__status-badge--${item.trend}`}>{item.trend}</span>
+                      </div>
+                      <span className="dash__job-meta">{item.note}</span>
+                    </div>
+                    <div className="dash__job-actions">
+                      <button type="button" className="dash__link-btn" onClick={() => openEditPulseForm(item)}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="dash__link-btn dash__link-btn--danger"
+                        onClick={() => handleDeletePulse(item)}
+                      >
                         Delete
                       </button>
                     </div>
@@ -533,6 +806,100 @@ export default function AdminDashboard() {
               </button>
               <button type="submit" className="dash__btn dash__btn--primary" disabled={savingJob}>
                 {savingJob ? 'Saving\u2026' : 'Save job'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ---------- Insight add/edit modal ---------- */}
+      {insightForm && (
+        <div className="dash__modal-backdrop" onClick={closeInsightForm}>
+          <form className="dash__modal" onClick={(e) => e.stopPropagation()} onSubmit={handleInsightSubmit}>
+            <h2 className="dash__modal-heading">{insightForm.id ? 'Edit insight' : 'Add insight'}</h2>
+
+            <div className="dash__field">
+              <label>Tag</label>
+              <input
+                type="text"
+                placeholder="e.g. Market Trends"
+                required
+                value={insightForm.tag}
+                onChange={handleInsightFieldChange('tag')}
+              />
+            </div>
+
+            <div className="dash__field">
+              <label>Title</label>
+              <input type="text" required value={insightForm.title} onChange={handleInsightFieldChange('title')} />
+            </div>
+
+            <div className="dash__field">
+              <label>Excerpt</label>
+              <textarea rows={4} required value={insightForm.excerpt} onChange={handleInsightFieldChange('excerpt')} />
+            </div>
+
+            {insightError && <p className="dash__form-error">{insightError}</p>}
+
+            <div className="dash__modal-actions">
+              <button type="button" className="dash__btn" onClick={closeInsightForm}>
+                Cancel
+              </button>
+              <button type="submit" className="dash__btn dash__btn--primary" disabled={savingInsight}>
+                {savingInsight ? 'Saving\u2026' : 'Save insight'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ---------- Market pulse add/edit modal ---------- */}
+      {pulseForm && (
+        <div className="dash__modal-backdrop" onClick={closePulseForm}>
+          <form className="dash__modal" onClick={(e) => e.stopPropagation()} onSubmit={handlePulseSubmit}>
+            <h2 className="dash__modal-heading">{pulseForm.id ? 'Edit pulse item' : 'Add pulse item'}</h2>
+
+            <div className="dash__field">
+              <label>Field</label>
+              <input
+                type="text"
+                placeholder="e.g. RF & Wireless"
+                required
+                value={pulseForm.field}
+                onChange={handlePulseFieldChange('field')}
+              />
+            </div>
+
+            <div className="dash__field">
+              <label>Trend</label>
+              <select value={pulseForm.trend} onChange={handlePulseFieldChange('trend')}>
+                {TREND_OPTIONS.map((t) => (
+                  <option value={t} key={t}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="dash__field">
+              <label>Note</label>
+              <textarea
+                rows={3}
+                placeholder="e.g. High demand \u2014 5G/6G rollouts driving hiring"
+                required
+                value={pulseForm.note}
+                onChange={handlePulseFieldChange('note')}
+              />
+            </div>
+
+            {pulseError && <p className="dash__form-error">{pulseError}</p>}
+
+            <div className="dash__modal-actions">
+              <button type="button" className="dash__btn" onClick={closePulseForm}>
+                Cancel
+              </button>
+              <button type="submit" className="dash__btn dash__btn--primary" disabled={savingPulse}>
+                {savingPulse ? 'Saving\u2026' : 'Save pulse item'}
               </button>
             </div>
           </form>
@@ -840,6 +1207,32 @@ export default function AdminDashboard() {
           font-family: var(--font-body);
           font-size: 13px;
           color: var(--color-text-muted);
+        }
+
+        .dash__status-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 2px 9px;
+          border-radius: 999px;
+          font-family: var(--font-body);
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: capitalize;
+        }
+
+        .dash__status-badge--up {
+          color: #1c8a54;
+          background: rgba(47, 191, 113, 0.14);
+        }
+
+        .dash__status-badge--down {
+          color: #b3271f;
+          background: rgba(179, 39, 31, 0.12);
+        }
+
+        .dash__status-badge--flat {
+          color: var(--color-text-muted);
+          background: rgba(11, 30, 61, 0.06);
         }
 
         .dash__app-message {
